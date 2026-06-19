@@ -43,7 +43,7 @@ certificate_number:form.cert.value,
 
 course:form.course.value,
 
-issue_date:form.date.value,
+date_issued:form.date.value,
 
 file_url:urlData.publicUrl
 
