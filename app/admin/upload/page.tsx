@@ -17,20 +17,19 @@ const file = form.file.files[0];
 
 const fileName = `${Date.now()}-${file.name}`;
 
+
 const {error:uploadError}=await supabase.storage
 .from("certificates")
 .upload(fileName,file);
 
 
 if(uploadError){
+
 setMessage(uploadError.message);
+
 return;
+
 }
-
-
-const {data:urlData}=supabase.storage
-.from("certificates")
-.getPublicUrl(fileName);
 
 
 const {error}=await supabase
@@ -45,7 +44,7 @@ course:form.course.value,
 
 date_issued:form.date.value,
 
-file_url:urlData.publicUrl
+file_url:fileName
 
 });
 
