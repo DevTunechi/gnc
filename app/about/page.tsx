@@ -1,6 +1,4 @@
 import PageHeader from "@/components/PageHeader";
-import Footer from "@/components/Footer";
-
 
 export default function About(){
 
@@ -45,8 +43,6 @@ Why Choose GNC?
 
 </section>
 
-
-<Footer />
 
 </>
 

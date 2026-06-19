@@ -1,6 +1,5 @@
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
-import Footer from "@/components/Footer";
 import { courses } from "@/lib/courses";
 
 
@@ -73,9 +72,6 @@ Enroll for this course →
 
 
 </section>
-
-
-<Footer />
 
 </>
 
