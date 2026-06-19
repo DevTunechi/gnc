@@ -20,6 +20,15 @@ export default function Footer() {
             Email: info@gnctraininginstitute.com
           </p>
 
+          <p>
+          Iyana School Bus Stop, 
+          42 Great Challenge Rd, IBA, Lagos 300001, Lagos, Nigeria
+          </p>
+
+          </p>
+          Phone: +234 805 6316 946
+          </p>
+
           <p className="mt-2">
             © {new Date().getFullYear()} Global Net Computer Training Institute.
             All rights reserved.
