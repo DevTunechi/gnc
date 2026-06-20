@@ -13,10 +13,16 @@ export default function UploadCertificate() {
     const form = e.target;
     const file = form.file.files[0];
 
-    const fileName = `documents/${Date.now()}-${file.name}`;
+    if (!file) {
+      setMessage("No file selected");
+      return;
+    }
 
+    const fileName = `${Date.now()}-${file.name}`;
+
+    // 1. Upload file to storage
     const { error: uploadError } = await supabase.storage
-      .from("gnc-documents")
+      .from("certificates")
       .upload(fileName, file);
 
     if (uploadError) {
@@ -24,12 +30,14 @@ export default function UploadCertificate() {
       return;
     }
 
-    const { data } = supabase.storage
-      .from("gnc-documents")
+    // 2. Get public URL correctly
+    const { data: urlData } = supabase.storage
+      .from("certificates")
       .getPublicUrl(fileName);
 
-    const fileUrl = data.publicUrl;
+    const fileUrl = urlData.publicUrl;
 
+    // 3. Insert into DB
     const { error } = await supabase
       .from("certificates")
       .insert({
@@ -43,13 +51,14 @@ export default function UploadCertificate() {
     if (error) {
       setMessage(error.message);
     } else {
-      setMessage("Upload successful");
+      setMessage("Certificate uploaded successfully");
       form.reset();
     }
   }
 
   return (
     <div className="p-6 max-w-xl mx-auto">
+
       <h1 className="text-2xl font-bold mb-5">
         GNC Certificate Upload
       </h1>
@@ -92,12 +101,13 @@ export default function UploadCertificate() {
         />
 
         <button className="bg-red-600 text-white px-5 py-3 rounded">
-          Upload Document
+          Upload Certificate
         </button>
 
       </form>
 
       <p className="mt-4">{message}</p>
+
     </div>
   );
 }
