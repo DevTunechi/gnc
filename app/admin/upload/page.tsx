@@ -13,23 +13,58 @@ e.preventDefault();
 
 const form = e.target;
 
-const file = form.file.files[0];
 
-const fileName = `${Date.now()}-${file.name}`;
-
-
-const {error:uploadError}=await supabase.storage
-.from("certificates")
-.upload(fileName,file);
+const certificateFile = form.certificate.files[0];
+const statementFile = form.statement.files[0];
 
 
-if(uploadError){
+const certificateName = `certificates/${Date.now()}-${certificateFile.name}`;
 
-setMessage(uploadError.message);
+const statementName = `statements/${Date.now()}-${statementFile.name}`;
 
+
+
+const {error:certError}=await supabase.storage
+.from("gnc-documents")
+.upload(certificateName,certificateFile);
+
+
+if(certError){
+
+setMessage(certError.message);
 return;
 
 }
+
+
+
+const {error:statementError}=await supabase.storage
+.from("gnc-documents")
+.upload(statementName,statementFile);
+
+
+if(statementError){
+
+setMessage(statementError.message);
+return;
+
+}
+
+
+
+const certificateUrl = supabase.storage
+.from("gnc-documents")
+.getPublicUrl(certificateName)
+.data.publicUrl;
+
+
+
+const statementUrl = supabase.storage
+.from("gnc-documents")
+.getPublicUrl(statementName)
+.data.publicUrl;
+
+
 
 
 const {error}=await supabase
@@ -44,9 +79,12 @@ course:form.course.value,
 
 date_issued:form.date.value,
 
-file_url:fileName
+file_url:certificateUrl,
+
+statement_url:statementUrl
 
 });
+
 
 
 if(error){
@@ -55,7 +93,7 @@ setMessage(error.message);
 
 }else{
 
-setMessage("Certificate uploaded successfully");
+setMessage("Certificate and Statement uploaded successfully");
 
 form.reset();
 
@@ -64,9 +102,11 @@ form.reset();
 }
 
 
+
 return (
 
 <div className="p-6 max-w-xl mx-auto">
+
 
 <h1 className="text-2xl font-bold mb-5">
 GNC Certificate Upload
@@ -76,30 +116,77 @@ GNC Certificate Upload
 <form onSubmit={upload} className="space-y-4">
 
 
-<input name="name" placeholder="Student Name" required className="border p-3 w-full"/>
+<input
+name="name"
+placeholder="Student Name"
+required
+className="border p-3 w-full"
+/>
 
 
-<input name="cert" placeholder="Certificate Number" required className="border p-3 w-full"/>
+<input
+name="cert"
+placeholder="Certificate Number"
+required
+className="border p-3 w-full"
+/>
 
 
-<input name="course" placeholder="Course" required className="border p-3 w-full"/>
+<input
+name="course"
+placeholder="Course"
+required
+className="border p-3 w-full"
+/>
 
 
-<input name="date" type="date" required className="border p-3 w-full"/>
+<input
+name="date"
+type="date"
+required
+className="border p-3 w-full"
+/>
 
 
-<input name="file" type="file" accept=".pdf,.png,.jpg,.jpeg" required/>
+<label>
+Certificate File
+</label>
+
+<input
+name="certificate"
+type="file"
+accept=".pdf,.png,.jpg,.jpeg"
+required
+/>
 
 
-<button className="bg-red-600 text-white px-5 py-3 rounded">
-Upload Certificate
+
+<label>
+Statement of Result
+</label>
+
+<input
+name="statement"
+type="file"
+accept=".pdf,.png,.jpg,.jpeg"
+required
+/>
+
+
+
+<button
+className="bg-red-600 text-white px-5 py-3 rounded"
+>
+Upload Documents
 </button>
 
 
 </form>
 
 
-<p className="mt-4">{message}</p>
+<p className="mt-4">
+{message}
+</p>
 
 
 </div>
