@@ -15,7 +15,7 @@ const data = await req.json();
 await resend.emails.send({
 
 from:
-"GNC Training Institute <onboarding@resend.dev>",
+"GNC Training Institute <info@gnctraininginstitute.com>",
 
 to:
 "info@gnctraininginstitute.com",
