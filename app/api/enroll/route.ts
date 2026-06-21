@@ -1,39 +1,55 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createClient } from "@supabase/supabase-js";
 
-
-export async function POST(req:Request){
-
-const resend = new Resend(
-process.env.RESEND_API_KEY
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+export async function POST(req: Request){
 
-const data = await req.json();
+  try {
 
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-await resend.emails.send({
+    const data = await req.json();
 
-from:
-"GNC Training Institute <info@gnctraininginstitute.com>",
+    // save application
+    await supabase.from("applications").insert({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      course: data.course,
+      message: data.reason
+    });
 
-to:
-"info@gnctraininginstitute.com",
+    // notify admin
+    await resend.emails.send({
+      from: "GNC Training Institute <info@gnctraininginstitute.com>",
+      to: "info@gnctraininginstitute.com",
+      subject: "New Student Application",
+      text: `
+New Application Received
 
-subject:
-"New GNC Student Enrollment",
+Name: ${data.name}
+Email: ${data.email}
+Phone: ${data.phone}
+Course: ${data.course}
 
-text:
-JSON.stringify(data,null,2)
+Message:
+${data.reason}
+      `
+    });
 
-});
+    return NextResponse.json({ success: true });
 
+  } catch (error: any) {
 
-return NextResponse.json({
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
 
-success:true
-
-});
-
-
+  }
 }
