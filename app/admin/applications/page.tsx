@@ -6,11 +6,8 @@ import { supabase } from "@/lib/supabase";
 export default function Applications(){
 
   const [apps, setApps] = useState<any[]>([]);
-  const [sent, setSent] = useState<any[]>([]);
-  const [tab, setTab] = useState("inbox");
   const [replyText, setReplyText] = useState<{[key:string]:string}>({});
 
-  // LOAD APPLICATIONS
   async function load(){
     const { data } = await supabase
       .from("applications")
@@ -20,22 +17,10 @@ export default function Applications(){
     setApps(data || []);
   }
 
-  // LOAD SENT EMAILS
-  async function loadSent(){
-    const { data } = await supabase
-      .from("sent_mails")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    setSent(data || []);
-  }
-
   useEffect(()=>{
     load();
-    loadSent();
   },[]);
 
-  // SEND REPLY
   async function sendReply(app:any){
 
     const message = replyText[app.id];
@@ -47,9 +32,7 @@ export default function Applications(){
 
     const res = await fetch("/api/reply", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: app.id,
         email: app.email,
@@ -61,7 +44,7 @@ export default function Applications(){
     const data = await res.json();
 
     if(data.success){
-      alert("Reply sent successfully");
+      alert("Reply sent");
 
       setReplyText(prev => ({
         ...prev,
@@ -69,20 +52,10 @@ export default function Applications(){
       }));
 
       load();
-      loadSent();
-
     } else {
-      alert(data.error || "Failed to send reply");
+      alert(data.error || "Failed");
     }
   }
-
-  // FILTER VIEW
-  const inbox = apps.filter(a => a.status !== "replied");
-
-  const filtered =
-    tab === "inbox"
-      ? inbox
-      : sent;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -91,79 +64,71 @@ export default function Applications(){
         GNC Mail Center
       </h1>
 
-      {/* TABS */}
-      <div className="flex gap-3 mb-6">
+      {apps.map((a)=>{
 
-        <button
-          onClick={()=>setTab("inbox")}
-          className={`px-4 py-2 border rounded ${
-            tab==="inbox" ? "bg-black text-white" : ""
-          }`}
-        >
-          Inbox ({inbox.length})
-        </button>
+        const isReplied = a.status === "replied";
 
-        <button
-          onClick={()=>setTab("sent")}
-          className={`px-4 py-2 border rounded ${
-            tab==="sent" ? "bg-black text-white" : ""
-          }`}
-        >
-          Sent ({sent.length})
-        </button>
+        return (
+          <div key={a.id} className="border p-4 mb-4 rounded">
 
-      </div>
+            {/* HEADER */}
+            <div className="flex justify-between items-center">
 
-      {/* LIST */}
-      {filtered.map((a)=>(
-        <div key={a.id} className="border p-4 mb-4 rounded">
+              {/* NAME / SUBJECT */}
+              <p className={`text-lg ${
+                isReplied ? "font-normal" : "font-bold"
+              }`}>
+                {a.name}
+              </p>
 
-          <div className="flex justify-between">
-            <p className="font-bold">{a.name}</p>
-
-            {a.status && (
+              {/* STATUS BADGE */}
               <span className={`text-xs px-2 py-1 rounded ${
-                a.status === "replied"
+                isReplied
                   ? "bg-green-100 text-green-700"
                   : "bg-yellow-100 text-yellow-700"
               }`}>
-                {a.status}
+                {isReplied ? "replied" : "new"}
               </span>
+
+            </div>
+
+            {/* EMAIL */}
+            <p className="text-sm text-gray-600">{a.email}</p>
+
+            {/* MESSAGE */}
+            <p className={`mt-2 ${
+              isReplied ? "text-gray-600" : "text-black font-medium"
+            }`}>
+              {a.message}
+            </p>
+
+            {/* REPLY BOX ONLY FOR UNREPLIED */}
+            {!isReplied && (
+              <>
+                <textarea
+                  className="border w-full mt-3 p-2"
+                  placeholder="Write reply..."
+                  value={replyText[a.id] || ""}
+                  onChange={(e)=>
+                    setReplyText(prev => ({
+                      ...prev,
+                      [a.id]: e.target.value
+                    }))
+                  }
+                />
+
+                <button
+                  onClick={()=>sendReply(a)}
+                  className="bg-green-600 text-white px-4 py-2 mt-2 rounded"
+                >
+                  Send Reply
+                </button>
+              </>
             )}
+
           </div>
-
-          <p className="text-sm">{a.email}</p>
-
-          <p className="mt-2 text-gray-700">
-            {a.message}
-          </p>
-
-          {/* ONLY SHOW REPLY BOX IN INBOX */}
-          {tab === "inbox" && (
-            <>
-              <textarea
-                className="border w-full mt-3 p-2"
-                placeholder="Write reply..."
-                value={replyText[a.id] || ""}
-                onChange={(e)=>
-                  setReplyText(prev => ({
-                    ...prev,
-                    [a.id]: e.target.value
-                  }))
-                }
-              />
-
-              <button
-                onClick={()=>sendReply(a)}
-                className="bg-green-600 text-white px-4 py-2 mt-2 rounded"
-              >
-                Send Reply
-              </button>
-            </>
-          )}
-
-        </div>
-      ))}
+        );
+      })}
 
     </div>
   );
