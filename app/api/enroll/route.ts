@@ -20,20 +20,29 @@ export async function POST(req: Request) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // 🔴 STEP 1: INSERT INTO DB (CRITICAL)
+    // 🔴 VALIDATION (prevents empty records)
+    if (!data.name || !data.email || !data.reason) {
+      return NextResponse.json({
+        success: false,
+        error: "Missing required fields"
+      }, { status: 400 });
+    }
+
+    // 🔴 INSERT FULL APPLICATION
     const { data: inserted, error } = await supabase
       .from("applications")
       .insert({
         name: data.name,
-        dob: data.dob,
-        address: data.address,
-        phone: data.phone,
+        dob: data.dob || null,
+        address: data.address || null,
+        phone: data.phone || null,
         email: data.email,
-        course: data.course,
+        course: data.course || null,
         reason: data.reason,
         status: "new"
       })
-      .select("*");
+      .select()
+      .single();
 
     if (error) {
       console.log("❌ SUPABASE ERROR:", error);
@@ -46,25 +55,31 @@ export async function POST(req: Request) {
 
     console.log("✅ SAVED TO DB:", inserted);
 
-    // 🔴 STEP 2: EMAIL
-    await resend.emails.send({
+    // 🔴 EMAIL (clean + structured)
+    const emailResult = await resend.emails.send({
       from: "GNC Training Institute <info@gnctraininginstitute.com>",
       to: "info@gnctraininginstitute.com",
       subject: `New Application - ${data.name}`,
       text: `
+==============================
 NEW APPLICATION RECEIVED
+==============================
 
 Name: ${data.name}
-DOB: ${data.dob}
-Address: ${data.address}
-Phone: ${data.phone}
+DOB: ${data.dob || "N/A"}
+Address: ${data.address || "N/A"}
+Phone: ${data.phone || "N/A"}
 Email: ${data.email}
-Course: ${data.course}
+Course: ${data.course || "N/A"}
 
+------------------------------
 Reason:
 ${data.reason}
+------------------------------
       `
     });
+
+    console.log("📧 EMAIL SENT:", emailResult);
 
     return NextResponse.json({
       success: true,

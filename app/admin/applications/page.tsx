@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-export default function Applications(){
+export default function Applications() {
 
   const [apps, setApps] = useState<any[]>([]);
   const [sent, setSent] = useState<any[]>([]);
   const [tab, setTab] = useState<"inbox" | "sent">("inbox");
 
-  const [replyText, setReplyText] = useState<{[key:string]:string}>({});
+  const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
 
-  async function loadInbox(){
+  async function loadInbox() {
     const { data } = await supabase
       .from("applications")
       .select("*")
@@ -20,7 +20,7 @@ export default function Applications(){
     setApps(data || []);
   }
 
-  async function loadSent(){
+  async function loadSent() {
     const { data } = await supabase
       .from("sent_mails")
       .select("*")
@@ -29,27 +29,25 @@ export default function Applications(){
     setSent(data || []);
   }
 
-  useEffect(()=>{
+  useEffect(() => {
     loadInbox();
     loadSent();
-  },[]);
+  }, []);
 
-  async function sendReply(app:any){
+  async function sendReply(app: any) {
 
     const message = replyText[app.id];
     const subject = replyText[`${app.id}_subject`];
     const cc = replyText[`${app.id}_cc`];
 
-    if(!message){
+    if (!message) {
       alert("Write a reply first");
       return;
     }
 
     const res = await fetch("/api/reply", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: app.id,
         email: app.email,
@@ -62,7 +60,8 @@ export default function Applications(){
 
     const data = await res.json();
 
-    if(data.success){
+    if (data.success) {
+
       alert("Reply sent successfully");
 
       setReplyText(prev => ({
@@ -80,8 +79,7 @@ export default function Applications(){
     }
   }
 
-  const inbox = apps;
-  const filtered = tab === "inbox" ? inbox : sent;
+  const filtered = tab === "inbox" ? apps : sent;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -94,18 +92,18 @@ export default function Applications(){
       <div className="flex gap-3 mb-6">
 
         <button
-          onClick={()=>setTab("inbox")}
+          onClick={() => setTab("inbox")}
           className={`px-4 py-2 border rounded ${
-            tab==="inbox" ? "bg-black text-white" : ""
+            tab === "inbox" ? "bg-black text-white" : ""
           }`}
         >
           Inbox ({apps.length})
         </button>
 
         <button
-          onClick={()=>setTab("sent")}
+          onClick={() => setTab("sent")}
           className={`px-4 py-2 border rounded ${
-            tab==="sent" ? "bg-black text-white" : ""
+            tab === "sent" ? "bg-black text-white" : ""
           }`}
         >
           Sent ({sent.length})
@@ -114,17 +112,18 @@ export default function Applications(){
       </div>
 
       {/* LIST */}
-      {filtered.map((a)=>{
+      {filtered.map((a) => {
 
         const isReplied = a.status === "replied";
 
         return (
           <div key={a.id} className="border p-4 mb-4 rounded">
 
+            {/* HEADER */}
             <div className="flex justify-between items-center">
 
               <p className={`text-lg ${
-                isReplied ? "font-normal" : "font-bold"
+                isReplied ? "font-normal text-gray-700" : "font-bold text-black"
               }`}>
                 {a.name}
               </p>
@@ -143,13 +142,25 @@ export default function Applications(){
 
             <p className="text-sm text-gray-600">{a.email}</p>
 
-            <p className={`mt-2 ${
-              isReplied ? "text-gray-600" : "text-black font-medium"
-            }`}>
-              {a.message}
-            </p>
+            {/* FULL APPLICATION DETAILS (THIS IS WHAT YOU WANTED) */}
+            {tab === "inbox" && (
+              <div className="mt-3 space-y-1 text-sm border-t pt-3">
 
-            {/* REPLY ONLY IN INBOX */}
+                <p><b>Course:</b> {a.course || "N/A"}</p>
+                <p><b>DOB:</b> {a.dob || "N/A"}</p>
+                <p><b>Address:</b> {a.address || "N/A"}</p>
+                <p><b>Phone:</b> {a.phone || "N/A"}</p>
+                <p><b>Email:</b> {a.email}</p>
+
+                <div className="mt-2">
+                  <p className="font-semibold">Reason for Application:</p>
+                  <p className="text-gray-700">{a.reason || a.message}</p>
+                </div>
+
+              </div>
+            )}
+
+            {/* REPLY BOX */}
             {tab === "inbox" && !isReplied && (
               <div className="border p-3 mt-3 rounded bg-gray-50">
 
@@ -157,7 +168,7 @@ export default function Applications(){
                   className="border w-full p-2 mb-2"
                   placeholder="Subject (optional)"
                   value={replyText[`${a.id}_subject`] || ""}
-                  onChange={(e)=>
+                  onChange={(e) =>
                     setReplyText(prev => ({
                       ...prev,
                       [`${a.id}_subject`]: e.target.value
@@ -169,7 +180,7 @@ export default function Applications(){
                   className="border w-full p-2 mb-2"
                   placeholder="CC email (optional)"
                   value={replyText[`${a.id}_cc`] || ""}
-                  onChange={(e)=>
+                  onChange={(e) =>
                     setReplyText(prev => ({
                       ...prev,
                       [`${a.id}_cc`]: e.target.value
@@ -181,7 +192,7 @@ export default function Applications(){
                   className="border w-full p-2"
                   placeholder="Write reply..."
                   value={replyText[a.id] || ""}
-                  onChange={(e)=>
+                  onChange={(e) =>
                     setReplyText(prev => ({
                       ...prev,
                       [a.id]: e.target.value
@@ -190,7 +201,7 @@ export default function Applications(){
                 />
 
                 <button
-                  onClick={()=>sendReply(a)}
+                  onClick={() => sendReply(a)}
                   className="bg-green-600 text-white px-4 py-2 mt-2 rounded"
                 >
                   Send Reply
@@ -199,11 +210,12 @@ export default function Applications(){
               </div>
             )}
 
-            {/* SENT VIEW EXTRA INFO */}
+            {/* SENT VIEW */}
             {tab === "sent" && (
               <div className="mt-2 text-sm text-gray-600">
                 <p><b>Subject:</b> {a.subject || "N/A"}</p>
                 {a.cc && <p><b>CC:</b> {a.cc}</p>}
+                <p className="mt-2">{a.message}</p>
               </div>
             )}
 
