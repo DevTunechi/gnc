@@ -21,54 +21,48 @@ export default function Applications(){
     load();
   },[]);
 
-async function sendReply(app:any){
+  async function sendReply(app:any){
 
-  const message = replyText[app.id];
+    const message = replyText[app.id];
 
-  if(!message){
-    alert("Write a reply first");
-    return;
-  }
-
-  try {
-
-    const res = await fetch("/api/reply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: app.email,
-        name: app.name,
-        message
-      })
-    });
-
-    const data = await res.json();
-
-    if(data.success){
-
-      alert("Reply sent successfully");
-
-      // clear input
-      setReplyText({...replyText, [app.id]:""});
-
-      // refresh list
-      load();
-
-    } else {
-      alert(data.error || "Failed to send reply");
+    if(!message){
+      alert("Write a reply first");
+      return;
     }
 
-  } catch (err:any){
-    alert("Network error sending reply");
-  }
-}
-    const data = await res.json();
+    try {
 
-    if(data.success){
-      alert("Reply sent");
-      setReplyText({...replyText, [app.id]:""});
-    } else {
-      alert(data.error || "Failed to send reply");
+      const res = await fetch("/api/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: app.email,
+          name: app.name,
+          message
+        })
+      });
+
+      const data = await res.json();
+
+      if(data.success){
+
+        alert("Reply sent successfully");
+
+        // clear input
+        setReplyText(prev => ({
+          ...prev,
+          [app.id]: ""
+        }));
+
+        // refresh list (optional but good UX)
+        load();
+
+      } else {
+        alert(data.error || "Failed to send reply");
+      }
+
+    } catch (err:any){
+      alert("Network error sending reply");
     }
   }
 
