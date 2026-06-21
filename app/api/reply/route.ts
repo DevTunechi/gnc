@@ -15,7 +15,7 @@ export async function POST(req: Request){
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // send email
+    // 1. SEND EMAIL
     const result = await resend.emails.send({
       from: "GNC Training Institute <info@gnctraininginstitute.com>",
       to: body.email,
@@ -28,11 +28,20 @@ Regards,
 GNC Training Institute`
     });
 
-    // mark as replied
+    // 2. UPDATE APPLICATION STATUS
     await supabase
       .from("applications")
       .update({ status: "replied" })
       .eq("id", body.id);
+
+    // 3. SAVE SENT MAIL (THIS FIXES YOUR SENT TAB)
+    await supabase
+      .from("sent_mails")
+      .insert({
+        name: body.name,
+        email: body.email,
+        message: body.message
+      });
 
     return NextResponse.json({
       success: true,
