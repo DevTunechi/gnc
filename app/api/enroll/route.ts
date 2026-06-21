@@ -15,48 +15,60 @@ export async function POST(req: Request){
 
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // 1. SAVE TO DATABASE (IMPORTANT)
+    // 1. SAVE FULL APPLICATION TO DATABASE
     const { error: dbError } = await supabase
       .from("applications")
       .insert({
         name: data.name,
-        email: data.email,
+        dob: data.dob,
+        address: data.address,
         phone: data.phone,
+        email: data.email,
         course: data.course,
-        message: data.reason
+        reason: data.reason,
+        status: "new"
       });
 
     if (dbError) {
-      console.log("DB ERROR:", dbError);
       return NextResponse.json({
         success: false,
         error: dbError.message
       }, { status: 500 });
     }
 
-    // 2. SEND EMAIL
+    // 2. SEND EMAIL WITH FULL DETAILS
     await resend.emails.send({
       from: "GNC Training Institute <info@gnctraininginstitute.com>",
       to: "info@gnctraininginstitute.com",
-      subject: "New Student Application",
+      subject: `New Application: ${data.name}`,
       text: `
-Name: ${data.name}
-Email: ${data.email}
+==============================
+NEW STUDENT APPLICATION
+==============================
+
+Full Name: ${data.name}
+Date of Birth: ${data.dob}
+Address: ${data.address}
 Phone: ${data.phone}
+Email: ${data.email}
 Course: ${data.course}
-Message: ${data.reason}
+
+------------------------------
+Reason for Application:
+${data.reason}
+------------------------------
       `
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true
+    });
 
-  } catch (error: any) {
-
-    console.log("SERVER ERROR:", error);
+  } catch (err:any) {
 
     return NextResponse.json({
       success: false,
-      error: error.message
+      error: err.message
     }, { status: 500 });
 
   }
