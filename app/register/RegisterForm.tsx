@@ -23,6 +23,7 @@ const course = params.get("course") || "";
 
 
 const [step,setStep]=useState(1);
+const [message,setMessage]=useState("");
 
 const [form,setForm]=useState({
 name:"",
@@ -44,9 +45,10 @@ setForm({
 }
 
 
-function submit(){
+async function submit(){
 
 const result=schema.safeParse(form);
+
 
 if(!result.success){
 
@@ -55,7 +57,61 @@ return;
 
 }
 
-alert("Application ready");
+
+setMessage("Sending application...");
+
+
+try{
+
+
+const response = await fetch("/api/enroll",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+...form,
+course
+
+})
+
+});
+
+
+const data = await response.json();
+
+
+if(data.success){
+
+setMessage("Application submitted successfully");
+
+setForm({
+name:"",
+dob:"",
+address:"",
+phone:"",
+email:"",
+reason:""
+});
+
+
+}else{
+
+setMessage(data.error || "Failed to send application");
+
+}
+
+
+}catch(error){
+
+setMessage("Something went wrong");
+
+}
+
 
 }
 
@@ -114,6 +170,7 @@ className="input h-32"
 
 <div className="mt-5 flex gap-3">
 
+
 {step > 1 &&
 <button
 onClick={()=>setStep(step-1)}
@@ -146,6 +203,11 @@ Submit
 
 
 </div>
+
+
+<p className="mt-5">
+{message}
+</p>
 
 
 </div>
