@@ -21,20 +21,20 @@ export default function Applications(){
     load();
   },[]);
 
-  async function sendReply(app:any){
+async function sendReply(app:any){
 
-    const message = replyText[app.id];
+  const message = replyText[app.id];
 
-    if(!message){
-      alert("Write a reply first");
-      return;
-    }
+  if(!message){
+    alert("Write a reply first");
+    return;
+  }
+
+  try {
 
     const res = await fetch("/api/reply", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: app.email,
         name: app.name,
@@ -42,6 +42,26 @@ export default function Applications(){
       })
     });
 
+    const data = await res.json();
+
+    if(data.success){
+
+      alert("Reply sent successfully");
+
+      // clear input
+      setReplyText({...replyText, [app.id]:""});
+
+      // refresh list
+      load();
+
+    } else {
+      alert(data.error || "Failed to send reply");
+    }
+
+  } catch (err:any){
+    alert("Network error sending reply");
+  }
+}
     const data = await res.json();
 
     if(data.success){
