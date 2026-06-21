@@ -8,6 +8,7 @@ export default function Applications(){
   const [apps, setApps] = useState<any[]>([]);
   const [sent, setSent] = useState<any[]>([]);
   const [tab, setTab] = useState<"inbox" | "sent">("inbox");
+
   const [replyText, setReplyText] = useState<{[key:string]:string}>({});
 
   async function loadInbox(){
@@ -36,6 +37,8 @@ export default function Applications(){
   async function sendReply(app:any){
 
     const message = replyText[app.id];
+    const subject = replyText[`${app.id}_subject`];
+    const cc = replyText[`${app.id}_cc`];
 
     if(!message){
       alert("Write a reply first");
@@ -44,12 +47,16 @@ export default function Applications(){
 
     const res = await fetch("/api/reply", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
         id: app.id,
         email: app.email,
         name: app.name,
-        message
+        message,
+        subject,
+        cc
       })
     });
 
@@ -60,13 +67,16 @@ export default function Applications(){
 
       setReplyText(prev => ({
         ...prev,
-        [app.id]: ""
+        [app.id]: "",
+        [`${app.id}_subject`]: "",
+        [`${app.id}_cc`]: ""
       }));
 
       loadInbox();
       loadSent();
+
     } else {
-      alert(data.error || "Failed");
+      alert(data.error || "Failed to send reply");
     }
   }
 
@@ -111,7 +121,6 @@ export default function Applications(){
         return (
           <div key={a.id} className="border p-4 mb-4 rounded">
 
-            {/* HEADER */}
             <div className="flex justify-between items-center">
 
               <p className={`text-lg ${
@@ -142,9 +151,34 @@ export default function Applications(){
 
             {/* REPLY ONLY IN INBOX */}
             {tab === "inbox" && !isReplied && (
-              <>
+              <div className="border p-3 mt-3 rounded bg-gray-50">
+
+                <input
+                  className="border w-full p-2 mb-2"
+                  placeholder="Subject (optional)"
+                  value={replyText[`${a.id}_subject`] || ""}
+                  onChange={(e)=>
+                    setReplyText(prev => ({
+                      ...prev,
+                      [`${a.id}_subject`]: e.target.value
+                    }))
+                  }
+                />
+
+                <input
+                  className="border w-full p-2 mb-2"
+                  placeholder="CC email (optional)"
+                  value={replyText[`${a.id}_cc`] || ""}
+                  onChange={(e)=>
+                    setReplyText(prev => ({
+                      ...prev,
+                      [`${a.id}_cc`]: e.target.value
+                    }))
+                  }
+                />
+
                 <textarea
-                  className="border w-full mt-3 p-2"
+                  className="border w-full p-2"
                   placeholder="Write reply..."
                   value={replyText[a.id] || ""}
                   onChange={(e)=>
@@ -161,7 +195,16 @@ export default function Applications(){
                 >
                   Send Reply
                 </button>
-              </>
+
+              </div>
+            )}
+
+            {/* SENT VIEW EXTRA INFO */}
+            {tab === "sent" && (
+              <div className="mt-2 text-sm text-gray-600">
+                <p><b>Subject:</b> {a.subject || "N/A"}</p>
+                {a.cc && <p><b>CC:</b> {a.cc}</p>}
+              </div>
             )}
 
           </div>

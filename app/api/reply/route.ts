@@ -8,64 +8,63 @@ export async function POST(req: Request){
 
     const body = await req.json();
 
-    console.log("REPLY PAYLOAD:", body);
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const subject =
+      body.subject?.trim() ||
+      "Response from GNC Training Institute";
 
-    // 1. SEND EMAIL
-    const emailResult = await resend.emails.send({
+    const cc = body.cc?.trim();
+
+    const emailPayload:any = {
       from: "GNC Training Institute <info@gnctraininginstitute.com>",
       to: body.email,
-      subject: "Response from GNC Training Institute",
+      subject,
       text: `Hello ${body.name}
 
 ${body.message}
 
 Regards,
 GNC Training Institute`
-    });
+    };
 
-    console.log("EMAIL RESULT:", emailResult);
+    if (cc) {
+      emailPayload.cc = cc;
+    }
 
-    // 2. UPDATE APPLICATION
-    const updateResult = await supabase
+    const result = await resend.emails.send(emailPayload);
+
+    await supabase
       .from("applications")
       .update({ status: "replied" })
       .eq("id", body.id);
 
-    console.log("UPDATE RESULT:", updateResult);
-
-    // 3. INSERT SENT MAIL
-    const insertResult = await supabase
+    await supabase
       .from("sent_mails")
       .insert({
         name: body.name,
         email: body.email,
-        message: body.message
+        message: body.message,
+        subject,
+        cc: cc || null
       });
-
-    console.log("INSERT RESULT:", insertResult);
 
     return NextResponse.json({
       success: true,
-      emailResult,
-      updateResult,
-      insertResult
+      result
     });
 
   } catch (err:any) {
 
-    console.log("REPLY ERROR:", err);
-
     return NextResponse.json({
-      success:false,
+      success: false,
       error: err.message
-    }, { status:500 });
+    }, { status: 500 });
 
   }
 }
