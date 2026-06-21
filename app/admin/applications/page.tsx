@@ -82,25 +82,24 @@ export default function Applications() {
     }
   }
 
-  const inbox = apps;
-  const filtered = tab === "inbox" ? inbox : sent;
+  const filtered = tab === "inbox" ? apps : sent;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-3 sm:p-6 max-w-6xl mx-auto">
 
-      <h1 className="text-2xl font-bold mb-4">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4">
         GNC Mail Center
       </h1>
 
       {/* TABS */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-2 sm:gap-3 mb-4 sm:mb-6 flex-wrap">
 
         <button
           onClick={() => {
             setTab("inbox");
             setSelected(null);
           }}
-          className={`px-4 py-2 border rounded ${
+          className={`px-3 sm:px-4 py-2 border rounded text-sm sm:text-base ${
             tab === "inbox" ? "bg-black text-white" : ""
           }`}
         >
@@ -112,7 +111,7 @@ export default function Applications() {
             setTab("sent");
             setSelected(null);
           }}
-          className={`px-4 py-2 border rounded ${
+          className={`px-3 sm:px-4 py-2 border rounded text-sm sm:text-base ${
             tab === "sent" ? "bg-black text-white" : ""
           }`}
         >
@@ -121,10 +120,11 @@ export default function Applications() {
 
       </div>
 
-      <div className="flex gap-4">
+      {/* MAIN LAYOUT */}
+      <div className="flex flex-col md:flex-row gap-4">
 
-        {/* LEFT PANEL (LIST) */}
-        <div className="w-1/3 border rounded p-2 h-[75vh] overflow-y-auto">
+        {/* LEFT PANEL */}
+        <div className="w-full md:w-1/3 border rounded p-2 h-[40vh] md:h-[75vh] overflow-y-auto">
 
           {filtered.map((a) => {
 
@@ -139,15 +139,17 @@ export default function Applications() {
                 }`}
               >
 
-                <p className={`font-medium ${
+                <p className={`font-medium text-sm sm:text-base ${
                   isReplied ? "text-gray-600" : "text-black"
                 }`}>
                   {a.name}
                 </p>
 
-                <p className="text-xs text-gray-500">{a.email}</p>
+                <p className="text-xs text-gray-500 break-all">
+                  {a.email}
+                </p>
 
-                <span className={`text-xs px-2 py-1 rounded ${
+                <span className={`text-xs px-2 py-1 rounded inline-block mt-1 ${
                   isReplied
                     ? "bg-green-100 text-green-700"
                     : "bg-yellow-100 text-yellow-700"
@@ -161,19 +163,25 @@ export default function Applications() {
 
         </div>
 
-        {/* RIGHT PANEL (DETAIL VIEW) */}
-        <div className="w-2/3 border rounded p-4 h-[75vh] overflow-y-auto">
+        {/* RIGHT PANEL */}
+        <div className="w-full md:w-2/3 border rounded p-3 sm:p-4 h-auto md:h-[75vh] overflow-y-auto">
 
           {!selected ? (
-            <p className="text-gray-500">
+            <p className="text-gray-500 text-sm sm:text-base">
               Select a student application to view details
             </p>
           ) : (
             <>
-              <h2 className="text-xl font-bold">{selected.name}</h2>
-              <p className="text-sm text-gray-600">{selected.email}</p>
+              <h2 className="text-lg sm:text-xl font-bold">
+                {selected.name}
+              </h2>
 
-              <div className="mt-4 space-y-1 text-sm border-t pt-3">
+              <p className="text-xs sm:text-sm text-gray-600 break-all">
+                {selected.email}
+              </p>
+
+              {/* DETAILS */}
+              <div className="mt-3 space-y-1 text-sm border-t pt-3">
 
                 <p><b>Course:</b> {selected.course || "N/A"}</p>
                 <p><b>DOB:</b> {selected.dob || "N/A"}</p>
@@ -182,17 +190,19 @@ export default function Applications() {
 
                 <div className="mt-2">
                   <p className="font-semibold">Reason:</p>
-                  <p>{selected.reason}</p>
+                  <p className="text-gray-700">
+                    {selected.reason}
+                  </p>
                 </div>
 
               </div>
 
-              {/* REPLY BOX */}
+              {/* REPLY */}
               {selected.status !== "replied" && (
-                <div className="mt-4 border-t pt-3">
+                <div className="mt-4 border-t pt-3 space-y-2">
 
                   <input
-                    className="border w-full p-2 mb-2"
+                    className="border w-full p-2 text-sm"
                     placeholder="Subject"
                     value={replyText[`${selected.id}_subject`] || ""}
                     onChange={(e) =>
@@ -204,7 +214,7 @@ export default function Applications() {
                   />
 
                   <input
-                    className="border w-full p-2 mb-2"
+                    className="border w-full p-2 text-sm"
                     placeholder="CC"
                     value={replyText[`${selected.id}_cc`] || ""}
                     onChange={(e) =>
@@ -216,7 +226,7 @@ export default function Applications() {
                   />
 
                   <textarea
-                    className="border w-full p-2"
+                    className="border w-full p-2 text-sm"
                     placeholder="Write reply..."
                     value={replyText[selected.id] || ""}
                     onChange={(e) =>
@@ -229,7 +239,7 @@ export default function Applications() {
 
                   <button
                     onClick={() => sendReply(selected)}
-                    className="bg-green-600 text-white px-4 py-2 mt-2 rounded"
+                    className="bg-green-600 text-white px-4 py-2 rounded text-sm w-full md:w-auto"
                   >
                     Send Reply
                   </button>
