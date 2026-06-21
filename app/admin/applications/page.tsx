@@ -9,6 +9,7 @@ export default function Applications() {
   const [sent, setSent] = useState<any[]>([]);
   const [tab, setTab] = useState<"inbox" | "sent">("inbox");
 
+  const [selected, setSelected] = useState<any>(null);
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
 
   async function loadInbox() {
@@ -74,15 +75,18 @@ export default function Applications() {
       loadInbox();
       loadSent();
 
+      setSelected(null);
+
     } else {
       alert(data.error || "Failed to send reply");
     }
   }
 
-  const filtered = tab === "inbox" ? apps : sent;
+  const inbox = apps;
+  const filtered = tab === "inbox" ? inbox : sent;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto">
 
       <h1 className="text-2xl font-bold mb-4">
         GNC Mail Center
@@ -92,7 +96,10 @@ export default function Applications() {
       <div className="flex gap-3 mb-6">
 
         <button
-          onClick={() => setTab("inbox")}
+          onClick={() => {
+            setTab("inbox");
+            setSelected(null);
+          }}
           className={`px-4 py-2 border rounded ${
             tab === "inbox" ? "bg-black text-white" : ""
           }`}
@@ -101,7 +108,10 @@ export default function Applications() {
         </button>
 
         <button
-          onClick={() => setTab("sent")}
+          onClick={() => {
+            setTab("sent");
+            setSelected(null);
+          }}
           className={`px-4 py-2 border rounded ${
             tab === "sent" ? "bg-black text-white" : ""
           }`}
@@ -111,24 +121,32 @@ export default function Applications() {
 
       </div>
 
-      {/* LIST */}
-      {filtered.map((a) => {
+      <div className="flex gap-4">
 
-        const isReplied = a.status === "replied";
+        {/* LEFT PANEL (LIST) */}
+        <div className="w-1/3 border rounded p-2 h-[75vh] overflow-y-auto">
 
-        return (
-          <div key={a.id} className="border p-4 mb-4 rounded">
+          {filtered.map((a) => {
 
-            {/* HEADER */}
-            <div className="flex justify-between items-center">
+            const isReplied = a.status === "replied";
 
-              <p className={`text-lg ${
-                isReplied ? "font-normal text-gray-700" : "font-bold text-black"
-              }`}>
-                {a.name}
-              </p>
+            return (
+              <div
+                key={a.id}
+                onClick={() => setSelected(a)}
+                className={`p-2 mb-2 border rounded cursor-pointer ${
+                  selected?.id === a.id ? "bg-gray-200" : ""
+                }`}
+              >
 
-              {tab === "inbox" && (
+                <p className={`font-medium ${
+                  isReplied ? "text-gray-600" : "text-black"
+                }`}>
+                  {a.name}
+                </p>
+
+                <p className="text-xs text-gray-500">{a.email}</p>
+
                 <span className={`text-xs px-2 py-1 rounded ${
                   isReplied
                     ? "bg-green-100 text-green-700"
@@ -136,93 +154,95 @@ export default function Applications() {
                 }`}>
                   {isReplied ? "replied" : "new"}
                 </span>
-              )}
 
-            </div>
+              </div>
+            );
+          })}
 
-            <p className="text-sm text-gray-600">{a.email}</p>
+        </div>
 
-            {/* FULL APPLICATION DETAILS (THIS IS WHAT YOU WANTED) */}
-            {tab === "inbox" && (
-              <div className="mt-3 space-y-1 text-sm border-t pt-3">
+        {/* RIGHT PANEL (DETAIL VIEW) */}
+        <div className="w-2/3 border rounded p-4 h-[75vh] overflow-y-auto">
 
-                <p><b>Course:</b> {a.course || "N/A"}</p>
-                <p><b>DOB:</b> {a.dob || "N/A"}</p>
-                <p><b>Address:</b> {a.address || "N/A"}</p>
-                <p><b>Phone:</b> {a.phone || "N/A"}</p>
-                <p><b>Email:</b> {a.email}</p>
+          {!selected ? (
+            <p className="text-gray-500">
+              Select a student application to view details
+            </p>
+          ) : (
+            <>
+              <h2 className="text-xl font-bold">{selected.name}</h2>
+              <p className="text-sm text-gray-600">{selected.email}</p>
+
+              <div className="mt-4 space-y-1 text-sm border-t pt-3">
+
+                <p><b>Course:</b> {selected.course || "N/A"}</p>
+                <p><b>DOB:</b> {selected.dob || "N/A"}</p>
+                <p><b>Address:</b> {selected.address || "N/A"}</p>
+                <p><b>Phone:</b> {selected.phone || "N/A"}</p>
 
                 <div className="mt-2">
-                  <p className="font-semibold">Reason for Application:</p>
-                  <p className="text-gray-700">{a.reason || a.message}</p>
+                  <p className="font-semibold">Reason:</p>
+                  <p>{selected.reason}</p>
                 </div>
 
               </div>
-            )}
 
-            {/* REPLY BOX */}
-            {tab === "inbox" && !isReplied && (
-              <div className="border p-3 mt-3 rounded bg-gray-50">
+              {/* REPLY BOX */}
+              {selected.status !== "replied" && (
+                <div className="mt-4 border-t pt-3">
 
-                <input
-                  className="border w-full p-2 mb-2"
-                  placeholder="Subject (optional)"
-                  value={replyText[`${a.id}_subject`] || ""}
-                  onChange={(e) =>
-                    setReplyText(prev => ({
-                      ...prev,
-                      [`${a.id}_subject`]: e.target.value
-                    }))
-                  }
-                />
+                  <input
+                    className="border w-full p-2 mb-2"
+                    placeholder="Subject"
+                    value={replyText[`${selected.id}_subject`] || ""}
+                    onChange={(e) =>
+                      setReplyText(prev => ({
+                        ...prev,
+                        [`${selected.id}_subject`]: e.target.value
+                      }))
+                    }
+                  />
 
-                <input
-                  className="border w-full p-2 mb-2"
-                  placeholder="CC email (optional)"
-                  value={replyText[`${a.id}_cc`] || ""}
-                  onChange={(e) =>
-                    setReplyText(prev => ({
-                      ...prev,
-                      [`${a.id}_cc`]: e.target.value
-                    }))
-                  }
-                />
+                  <input
+                    className="border w-full p-2 mb-2"
+                    placeholder="CC"
+                    value={replyText[`${selected.id}_cc`] || ""}
+                    onChange={(e) =>
+                      setReplyText(prev => ({
+                        ...prev,
+                        [`${selected.id}_cc`]: e.target.value
+                      }))
+                    }
+                  />
 
-                <textarea
-                  className="border w-full p-2"
-                  placeholder="Write reply..."
-                  value={replyText[a.id] || ""}
-                  onChange={(e) =>
-                    setReplyText(prev => ({
-                      ...prev,
-                      [a.id]: e.target.value
-                    }))
-                  }
-                />
+                  <textarea
+                    className="border w-full p-2"
+                    placeholder="Write reply..."
+                    value={replyText[selected.id] || ""}
+                    onChange={(e) =>
+                      setReplyText(prev => ({
+                        ...prev,
+                        [selected.id]: e.target.value
+                      }))
+                    }
+                  />
 
-                <button
-                  onClick={() => sendReply(a)}
-                  className="bg-green-600 text-white px-4 py-2 mt-2 rounded"
-                >
-                  Send Reply
-                </button>
+                  <button
+                    onClick={() => sendReply(selected)}
+                    className="bg-green-600 text-white px-4 py-2 mt-2 rounded"
+                  >
+                    Send Reply
+                  </button>
 
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* SENT VIEW */}
-            {tab === "sent" && (
-              <div className="mt-2 text-sm text-gray-600">
-                <p><b>Subject:</b> {a.subject || "N/A"}</p>
-                {a.cc && <p><b>CC:</b> {a.cc}</p>}
-                <p className="mt-2">{a.message}</p>
-              </div>
-            )}
+            </>
+          )}
 
-          </div>
-        );
-      })}
+        </div>
 
+      </div>
     </div>
   );
 }
