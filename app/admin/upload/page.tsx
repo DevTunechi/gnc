@@ -1,319 +1,368 @@
 "use client";
 
-import { useEffect,useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
+export default function UploadCertificate() {
 
-export default function UploadCertificate(){
+  const [message, setMessage] = useState("");
+  const [certificates, setCertificates] = useState<any[]>([]);
 
 
-const [message,setMessage]=useState("");
-const [certificates,setCertificates]=useState<any[]>([]);
+  async function loadCertificates(){
 
+    const { data } = await supabase
+      .from("certificates")
+      .select("*")
+      .order("created_at", { ascending: false });
 
 
-async function loadCertificates(){
+    setCertificates(data || []);
 
-const {data}=await supabase
-.from("certificates")
-.select("*")
-.order("created_at",{ascending:false});
+  }
 
 
-setCertificates(data || []);
 
-}
+  useEffect(()=>{
 
+    loadCertificates();
 
+  },[]);
 
-useEffect(()=>{
 
-loadCertificates();
 
-},[]);
 
+  async function upload(e:any){
 
+    e.preventDefault();
 
 
-async function upload(e:any){
+    const form = e.target;
 
-e.preventDefault();
+    const file = form.file.files[0];
 
 
-const form=e.target;
+    if(!file){
 
-const file=form.file.files[0];
+      setMessage("No file selected");
+      return;
 
+    }
 
-if(!file){
 
-setMessage("Select certificate file");
-return;
 
-}
+    const fileName = `${Date.now()}-${file.name}`;
 
 
 
-const fileName=`${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from("certificates")
+      .upload(fileName,file);
 
 
 
-const {error:uploadError}=await supabase.storage
-.from("certificates")
-.upload(fileName,file);
+    if(uploadError){
 
+      setMessage(uploadError.message);
+      return;
 
+    }
 
-if(uploadError){
 
-setMessage(uploadError.message);
-return;
 
-}
 
+    const { data:urlData } = supabase.storage
+      .from("certificates")
+      .getPublicUrl(fileName);
 
 
 
-const {data:urlData}=supabase.storage
-.from("certificates")
-.getPublicUrl(fileName);
+    const fileUrl = urlData.publicUrl;
 
 
 
-const {error}=await supabase
-.from("certificates")
-.insert({
+    const { error } = await supabase
+      .from("certificates")
+      .insert({
 
-student_name:form.name.value,
+        student_name: form.name.value,
 
-certificate_number:form.cert.value,
+        certificate_number: form.cert.value,
 
-course:form.course.value,
+        course: form.course.value,
 
-date_issued:form.date.value,
+        date_issued: form.date.value,
 
-file_url:urlData.publicUrl
+        file_url: fileUrl
 
-});
+      });
 
 
 
-if(error){
+    if(error){
 
-setMessage(error.message);
+      setMessage(error.message);
 
-}else{
+    }else{
 
-setMessage("Certificate uploaded");
+      setMessage("Certificate uploaded successfully");
 
-form.reset();
+      form.reset();
 
-loadCertificates();
+      loadCertificates();
 
-}
+    }
 
 
-}
+  }
 
 
 
 
 
-async function deleteCertificate(cert:any){
+  async function deleteCertificate(cert:any){
 
 
-const confirmDelete=confirm(
-"Delete this certificate?"
-);
+    const confirmDelete = confirm(
+      "Delete this certificate?"
+    );
 
 
-if(!confirmDelete)return;
+    if(!confirmDelete) return;
 
 
 
-const filePath=cert.file_url.split("/certificates/")[1];
+    try {
 
 
 
-await supabase.storage
-.from("certificates")
-.remove([filePath]);
+      // extract real storage filename
+      const filePath = cert.file_url.split("/public/certificates/")[1];
 
 
 
-await supabase
-.from("certificates")
-.delete()
-.eq("id",cert.id);
+      if(filePath){
 
 
+        const { error: storageError } = await supabase.storage
+          .from("certificates")
+          .remove([filePath]);
 
-setMessage("Certificate deleted");
 
 
-loadCertificates();
+        if(storageError){
 
+          console.log(
+            "Storage delete error:",
+            storageError
+          );
 
-}
+        }
 
+      }
 
 
 
-return (
 
-<div className="p-6 max-w-xl mx-auto">
+      const { error } = await supabase
+        .from("certificates")
+        .delete()
+        .eq("id", cert.id);
 
 
-<h1 className="text-2xl font-bold mb-5">
-GNC Certificate Upload
-</h1>
 
+      if(error){
 
+        setMessage(error.message);
+        return;
 
-<form onSubmit={upload} className="space-y-4">
+      }
 
 
-<input
-name="name"
-placeholder="Student Name"
-required
-className="border p-3 w-full"
-/>
 
+      setMessage("Certificate deleted successfully");
 
 
-<input
-name="cert"
-placeholder="Certificate Number"
-required
-className="border p-3 w-full"
-/>
+      loadCertificates();
 
 
 
-<input
-name="course"
-placeholder="Course"
-required
-className="border p-3 w-full"
-/>
+    } catch(error:any){
 
 
+      console.log(error);
 
-<input
-name="date"
-type="date"
-required
-className="border p-3 w-full"
-/>
+      setMessage("Delete failed");
 
 
+    }
 
-<input
 
-name="file"
+  }
 
-type="file"
 
-accept=".pdf,.png,.jpg,.jpeg"
 
-required
 
-/>
 
+  return (
 
+    <div className="p-6 max-w-xl mx-auto">
 
-<button
 
-className="bg-red-600 text-white px-5 py-3 rounded"
+      <h1 className="text-2xl font-bold mb-5">
+        GNC Certificate Upload
+      </h1>
 
->
-Upload Certificate
-</button>
 
 
 
-</form>
+      <form
+      onSubmit={upload}
+      className="space-y-4"
+      >
 
 
+        <input
+        name="name"
+        placeholder="Student Name"
+        required
+        className="border p-3 w-full"
+        />
 
-<p className="mt-4">
-{message}
-</p>
 
 
+        <input
+        name="cert"
+        placeholder="Certificate Number"
+        required
+        className="border p-3 w-full"
+        />
 
 
-<h2 className="text-xl font-bold mt-8">
-Uploaded Certificates
-</h2>
 
+        <input
+        name="course"
+        placeholder="Course"
+        required
+        className="border p-3 w-full"
+        />
 
 
-{certificates.map(cert=>(
 
+        <input
+        name="date"
+        type="date"
+        required
+        className="border p-3 w-full"
+        />
 
-<div
 
-key={cert.id}
 
-className="border p-4 mt-3 rounded"
+        <input
+        name="file"
+        type="file"
+        accept=".pdf,.png,.jpg,.jpeg"
+        required
+        />
 
->
 
 
-<p>
-<b>{cert.student_name}</b>
-</p>
+        <button
+        className="bg-red-600 text-white px-5 py-3 rounded"
+        >
 
-<p>
-{cert.certificate_number}
-</p>
+          Upload Certificate
 
+        </button>
 
-<div className="flex gap-3 mt-3">
 
+      </form>
 
-<a
 
-href={cert.file_url}
 
-target="_blank"
+      <p className="mt-4">
+        {message}
+      </p>
 
-className="bg-blue-600 text-white px-3 py-2 rounded"
 
->
-View
-</a>
 
 
 
-<button
+      <h2 className="text-xl font-bold mt-8">
+        Uploaded Certificates
+      </h2>
 
-onClick={()=>deleteCertificate(cert)}
 
-className="bg-red-600 text-white px-3 py-2 rounded"
 
->
-Delete
-</button>
 
 
+      {certificates.map(cert=>(
 
-</div>
 
+        <div
+        key={cert.id}
+        className="border p-4 mt-3 rounded"
+        >
 
-</div>
 
 
-))}
+          <p>
+            <b>{cert.student_name}</b>
+          </p>
 
 
 
-</div>
+          <p>
+            {cert.certificate_number}
+          </p>
 
 
-)
 
+
+
+          <div className="flex gap-3 mt-3">
+
+
+            <a
+            href={cert.file_url}
+            target="_blank"
+            className="bg-blue-600 text-white px-3 py-2 rounded"
+            >
+
+              View
+
+            </a>
+
+
+
+
+            <button
+
+            onClick={()=>deleteCertificate(cert)}
+
+            className="bg-red-600 text-white px-3 py-2 rounded"
+
+            >
+
+              Delete
+
+            </button>
+
+
+
+          </div>
+
+
+        </div>
+
+
+      ))}
+
+
+
+    </div>
+
+
+  );
 
 }
