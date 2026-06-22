@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function UploadCertificate() {
@@ -38,7 +38,6 @@ export default function UploadCertificate() {
 
 
     const form = e.target;
-
     const file = form.file.files[0];
 
 
@@ -77,10 +76,6 @@ export default function UploadCertificate() {
 
 
 
-    const fileUrl = urlData.publicUrl;
-
-
-
     const { error } = await supabase
       .from("certificates")
       .insert({
@@ -93,7 +88,7 @@ export default function UploadCertificate() {
 
         date_issued: form.date.value,
 
-        file_url: fileUrl
+        file_url: urlData.publicUrl
 
       });
 
@@ -124,7 +119,7 @@ export default function UploadCertificate() {
 
 
     const confirmDelete = confirm(
-      "Delete this certificate?"
+      "Delete this certificate record?"
     );
 
 
@@ -132,70 +127,25 @@ export default function UploadCertificate() {
 
 
 
-    try {
+    const { error } = await supabase
+      .from("certificates")
+      .delete()
+      .eq("id", cert.id);
 
 
 
-      // extract real storage filename
-      const filePath = cert.file_url.split("/public/certificates/")[1];
+    if(error){
 
-
-
-      if(filePath){
-
-
-        const { error: storageError } = await supabase.storage
-          .from("certificates")
-          .remove([filePath]);
-
-
-
-        if(storageError){
-
-          console.log(
-            "Storage delete error:",
-            storageError
-          );
-
-        }
-
-      }
-
-
-
-
-      const { error } = await supabase
-        .from("certificates")
-        .delete()
-        .eq("id", cert.id);
-
-
-
-      if(error){
-
-        setMessage(error.message);
-        return;
-
-      }
-
-
-
-      setMessage("Certificate deleted successfully");
-
-
-      loadCertificates();
-
-
-
-    } catch(error:any){
-
-
-      console.log(error);
-
-      setMessage("Delete failed");
-
+      setMessage(error.message);
+      return;
 
     }
+
+
+
+    setMessage("Certificate deleted successfully");
+
+    loadCertificates();
 
 
   }
@@ -271,7 +221,7 @@ export default function UploadCertificate() {
         className="bg-red-600 text-white px-5 py-3 rounded"
         >
 
-          Upload Certificate
+        Upload Certificate
 
         </button>
 
@@ -305,18 +255,14 @@ export default function UploadCertificate() {
         >
 
 
-
           <p>
             <b>{cert.student_name}</b>
           </p>
 
 
-
           <p>
             {cert.certificate_number}
           </p>
-
-
 
 
 
@@ -329,7 +275,7 @@ export default function UploadCertificate() {
             className="bg-blue-600 text-white px-3 py-2 rounded"
             >
 
-              View
+            View
 
             </a>
 
@@ -344,10 +290,9 @@ export default function UploadCertificate() {
 
             >
 
-              Delete
+            Delete
 
             </button>
-
 
 
           </div>
@@ -361,7 +306,6 @@ export default function UploadCertificate() {
 
 
     </div>
-
 
   );
 
