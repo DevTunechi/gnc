@@ -5,36 +5,42 @@ import { supabase } from "@/lib/supabase";
 
 export default function Verify(){
 
-const [search,setSearch] = useState("");
-const [result,setResult] = useState<any>(null);
-const [message,setMessage] = useState("");
+  const [search,setSearch] = useState("");
+  const [result,setResult] = useState<any[]>([]);
+  const [message,setMessage] = useState("");
 
 
-async function verify(){
+  async function verify(){
 
-setMessage("");
-setResult(null);
-
-
-const {data,error}=await supabase
-.from("certificates")
-.select("*")
-.or(`student_name.ilike.%${search}%,certificate_number.ilike.%${search}%`)
-.single();
+    setMessage("");
+    setResult([]);
 
 
-
-if(error){
-
-setMessage("Certificate not found");
-return;
-
-}
+    if(!search.trim()){
+      setMessage("Enter name or certificate number");
+      return;
+    }
 
 
-setResult(data);
+    const { data,error } = await supabase
+      .from("certificates")
+      .select("*")
+      .or(
+        `student_name.ilike.%${search}%,certificate_number.ilike.%${search}%`
+      );
 
-}
+
+    if(error || !data || data.length === 0){
+
+      setMessage("Certificate not found");
+      return;
+
+    }
+
+
+    setResult(data);
+
+  }
 
 
 
@@ -53,7 +59,7 @@ Verify Certificate
 
 className="border p-3 w-full mb-4"
 
-placeholder="Enter student name or certificate number"
+placeholder="Search student name or certificate number"
 
 value={search}
 
@@ -70,7 +76,7 @@ onClick={verify}
 className="bg-red-600 text-white px-5 py-3 rounded"
 
 >
-Search
+Search Certificate
 </button>
 
 
@@ -81,9 +87,13 @@ Search
 
 
 
-{result && (
+{result.map((certificate)=>(
 
-<div className="mt-6 border p-5 rounded">
+
+<div
+key={certificate.id}
+className="mt-6 border p-5 rounded"
+>
 
 
 <h2 className="font-bold text-xl">
@@ -91,23 +101,28 @@ Certificate Verified
 </h2>
 
 
-<p>Name: {result.student_name}</p>
 
-<p>Course: {result.course}</p>
+<p>Name: {certificate.student_name}</p>
 
-<p>Certificate No: {result.certificate_number}</p>
+<p>Course: {certificate.course}</p>
 
-<p>Date Issued: {result.date_issued}</p>
+<p>
+Certificate No: {certificate.certificate_number}
+</p>
+
+<p>
+Date Issued: {certificate.date_issued}
+</p>
 
 
 
 <a
 
-href={result.file_url}
+href={certificate.file_url}
 
 target="_blank"
 
-className="text-blue-600 underline block mt-4"
+className="inline-block mt-5 bg-blue-600 text-white px-5 py-3 rounded"
 
 >
 View Certificate
@@ -115,23 +130,10 @@ View Certificate
 
 
 
-<a
-
-href={result.statement_url}
-
-target="_blank"
-
-className="text-blue-600 underline block mt-3"
-
->
-View Statement of Result
-</a>
-
-
-
 </div>
 
-)}
+
+))}
 
 
 
