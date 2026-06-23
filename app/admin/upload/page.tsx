@@ -1,63 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function UploadCertificate() {
 
   const [message, setMessage] = useState("");
-  const [certificates, setCertificates] = useState<any[]>([]);
-
-
-  async function loadCertificates(){
-
-    const { data } = await supabase
-      .from("certificates")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-
-    setCertificates(data || []);
-
-  }
-
-
-
-  useEffect(()=>{
-
-    loadCertificates();
-
-  },[]);
-
-
-
+  const [fileName, setFileName] = useState("");
 
   async function upload(e:any){
 
     e.preventDefault();
-
 
     const form = e.target;
     const file = form.file.files[0];
 
 
     if(!file){
-
-      setMessage("No file selected");
+      setMessage("Please select a certificate file");
       return;
-
     }
 
 
-
-    const fileName = `${Date.now()}-${file.name}`;
-
+    const fileNameUpload = `${Date.now()}-${file.name}`;
 
 
+    // Upload file
     const { error: uploadError } = await supabase.storage
       .from("certificates")
-      .upload(fileName,file);
-
+      .upload(fileNameUpload, file);
 
 
     if(uploadError){
@@ -68,11 +39,12 @@ export default function UploadCertificate() {
     }
 
 
-
-
     const { data:urlData } = supabase.storage
       .from("certificates")
-      .getPublicUrl(fileName);
+      .getPublicUrl(fileNameUpload);
+
+
+    const fileUrl = urlData.publicUrl;
 
 
 
@@ -81,14 +53,10 @@ export default function UploadCertificate() {
       .insert({
 
         student_name: form.name.value,
-
         certificate_number: form.cert.value,
-
         course: form.course.value,
-
         date_issued: form.date.value,
-
-        file_url: urlData.publicUrl
+        file_url:fileUrl
 
       });
 
@@ -103,54 +71,11 @@ export default function UploadCertificate() {
       setMessage("Certificate uploaded successfully");
 
       form.reset();
-
-      loadCertificates();
-
-    }
-
-
-  }
-
-
-
-
-
-  async function deleteCertificate(cert:any){
-
-
-    const confirmDelete = confirm(
-      "Delete this certificate record?"
-    );
-
-
-    if(!confirmDelete) return;
-
-
-
-    const { error } = await supabase
-      .from("certificates")
-      .delete()
-      .eq("id", cert.id);
-
-
-
-    if(error){
-
-      setMessage(error.message);
-      return;
+      setFileName("");
 
     }
 
-
-
-    setMessage("Certificate deleted successfully");
-
-    loadCertificates();
-
-
   }
-
-
 
 
 
@@ -165,47 +90,49 @@ export default function UploadCertificate() {
 
 
 
-
       <form
       onSubmit={upload}
       className="space-y-4"
       >
 
 
-        <input
-        name="name"
-        placeholder="Student Name"
-        required
-        className="border p-3 w-full"
-        />
+      <input
+      name="name"
+      placeholder="Student Name"
+      required
+      className="border p-3 w-full rounded"
+      />
 
 
-
-        <input
-        name="cert"
-        placeholder="Certificate Number"
-        required
-        className="border p-3 w-full"
-        />
-
+      <input
+      name="cert"
+      placeholder="Certificate Number"
+      required
+      className="border p-3 w-full rounded"
+      />
 
 
-        <input
-        name="course"
-        placeholder="Course"
-        required
-        className="border p-3 w-full"
-        />
+      <input
+      name="course"
+      placeholder="Course"
+      required
+      className="border p-3 w-full rounded"
+      />
 
 
+      <input
+      name="date"
+      type="date"
+      required
+      className="border p-3 w-full rounded"
+      />
 
-        <input
-        name="date"
-        type="date"
-        required
-        className="border p-3 w-full"
-        />
 
+      <label className="block">
+
+        <span className="block mb-2 font-medium">
+          Certificate PDF/Image
+        </span>
 
 
         <input
@@ -213,17 +140,44 @@ export default function UploadCertificate() {
         type="file"
         accept=".pdf,.png,.jpg,.jpeg"
         required
+        className="hidden"
+        id="certificateFile"
+
+        onChange={(e)=>
+          setFileName(
+            e.target.files?.[0]?.name || ""
+          )
+        }
+
         />
 
 
-
-        <button
-        className="bg-red-600 text-white px-5 py-3 rounded"
+        <label
+        htmlFor="certificateFile"
+        className="inline-block cursor-pointer bg-blue-950 text-white px-5 py-3 rounded"
         >
+          Select Certificate File
+        </label>
 
+
+        {fileName && (
+
+          <p className="mt-2 text-sm text-gray-600">
+            Selected: {fileName}
+          </p>
+
+        )}
+
+
+      </label>
+
+
+
+      <button
+      className="bg-red-600 text-white px-5 py-3 rounded w-full"
+      >
         Upload Certificate
-
-        </button>
+      </button>
 
 
       </form>
@@ -233,76 +187,6 @@ export default function UploadCertificate() {
       <p className="mt-4">
         {message}
       </p>
-
-
-
-
-
-      <h2 className="text-xl font-bold mt-8">
-        Uploaded Certificates
-      </h2>
-
-
-
-
-
-      {certificates.map(cert=>(
-
-
-        <div
-        key={cert.id}
-        className="border p-4 mt-3 rounded"
-        >
-
-
-          <p>
-            <b>{cert.student_name}</b>
-          </p>
-
-
-          <p>
-            {cert.certificate_number}
-          </p>
-
-
-
-          <div className="flex gap-3 mt-3">
-
-
-            <a
-            href={cert.file_url}
-            target="_blank"
-            className="bg-blue-600 text-white px-3 py-2 rounded"
-            >
-
-            View
-
-            </a>
-
-
-
-
-            <button
-
-            onClick={()=>deleteCertificate(cert)}
-
-            className="bg-red-600 text-white px-3 py-2 rounded"
-
-            >
-
-            Delete
-
-            </button>
-
-
-          </div>
-
-
-        </div>
-
-
-      ))}
-
 
 
     </div>
